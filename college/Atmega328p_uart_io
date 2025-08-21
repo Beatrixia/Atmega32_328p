@@ -1,0 +1,46 @@
+
+#define F_CPU 16000000UL
+#include <avr/io.h>
+#include <util/delay.h>
+
+void uart_init(unsigned long baud) {
+	// Set baud rate
+	uint16_t ubrr = (F_CPU / 16 / baud) - 1; //<<this math is from datasheet its "ubrr = (f_cpu / (16*baud)) - 1" if doublespeed 16 is 8
+	UBRR0H = (ubrr >> 8); // ubrr is 16 bit long but UBRR0 is only 8 bit so we have to set 8 high and 8 low each
+	UBRR0L = ubrr;
+
+	// Enable transmitter and receiver
+	UCSR0B = (1 << RXEN0) | (1 << TXEN0); // rxen0 is enable rx , txen0 is enable tx
+
+	// Set frame format: 8 data bits, 1 stop bit, no parity
+	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // just set bit can read from data sheet
+}
+
+void uart_transmit(uint8_t data) {
+	// Wait for empty transmit buffer
+	while (!(UCSR0A & (1 << UDRE0))); //UDRE0 will be 1 when its ready to send data (use to check is the wire have traffic)
+	// Put data into buffer, sends the data
+	UDR0 = data;
+}
+
+uint8_t uart_receive(void) {
+	// Wait for data to be received
+	while (!(UCSR0A & (1 << RXC0))); //RXC0 is flag that mean we have data came to us and finish tranfer
+	// Get and return received data from buffer
+	return UDR0;
+}
+
+int main(void) {
+	uart_init(9600);  // Initialize UART with 9600 baud
+	DDRC = 0x01;
+	PORTC = 0x01;
+	while (1) {
+		uint8_t twxt = uart_receive();  // receive peep peep RX
+		uart_transmit(twxt);            // send back peep peep TX (echo)
+		
+		if (twxt == 0x69) PORTC |= (1<<0);
+		else if (twxt == 0x6f) PORTC &= ~(1<<0);
+	}
+}
+
+
