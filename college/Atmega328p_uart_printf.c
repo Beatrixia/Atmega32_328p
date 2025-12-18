@@ -36,5 +36,5 @@
     rx_flag = 1;                                            //UartRx Flag
   }
 
-  // UartRxData ,UartRxFlag Use this variable For UartRx
+	// UartRxData ,UartRxFlag Use this variable For UartRx
 	// printf(""); ,For send UartTx
